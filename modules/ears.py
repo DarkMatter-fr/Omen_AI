@@ -1,8 +1,5 @@
 import speech_recognition as sr
-try:
-    from modules import audio_utils as au
-except ModuleNotFoundError:
-    import audio_utils as au
+from modules import audio_utils as au
 
 def take_command():
     """
