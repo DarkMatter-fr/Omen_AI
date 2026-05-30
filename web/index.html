@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMEN // CORE INTERFACE v1.0</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="crt-vignette"></div>
+    <div class="scanlines"></div>
+    
+    <div class="gradient-bg"></div>
+    <div class="fog-bg"></div>
+    <div class="noise-bg"></div>
+    
+    <div class="view-container">
+        <header class="header">
+            <div class="header-glitch" data-text="OMEN // ASSISTANT">OMEN // ASSISTANT</div>
+            <p class="system-ticker">SECURE NODE // NEURAL_LINK: ACTIVE</p>
+        </header>
+        
+        <main class="center-stage">
+            <div class="orb-wrapper idle" id="mic-wrapper" onclick="triggerMic()">
+                <div class="orb-ring ring-outer"></div>
+                <div class="orb-ring ring-inner"></div>
+                <div class="orb">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12,14c1.66,0,3-1.34,3-3V5c0-1.66-1.34-3-3-3S9,3.34,9,5v6C9,12.66,10.34,14,12,14z M17,11c0,2.76-2.24,5-5,5s-5-2.24-5-5H5 c0,3.53,2.61,6.43,6,6.92V21h2v-3.08c3.39-0.49,6-3.39,6-6.92H17z"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <div class="visualizer-bay">
+                <canvas id="waveform" width="800" height="80"></canvas>
+            </div>
+        </main>
+        
+        <section class="transcript-wrapper">
+            <div class="chassis-bracket corner-tl"></div>
+            <div class="chassis-bracket corner-tr"></div>
+            <div class="chassis-bracket corner-bl"></div>
+            <div class="chassis-bracket corner-br"></div>
+            <div class="transcript-panel" id="transcript"></div>
+        </section>
+        
+        <footer class="hud" id="hud">
+            <div class="hud-status">
+                <div id="status-dot"></div>
+                <span id="status-label">SYS_IDLE</span>
+            </div>
+            <div class="hud-center">
+                <span class="hud-bracket">[</span> COGNITIVE LINK FUNCTIONAL <span class="hud-bracket">]</span>
+            </div>
+            <div class="hud-ping">RTT // <span id="rtt-val">--</span> MS</div>
+        </footer>
+    </div>
+
+    <script type="text/javascript" src="/eel.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
