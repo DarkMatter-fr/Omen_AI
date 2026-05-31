@@ -1,45 +1,69 @@
 import os
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types # We import the types library to build the template
 
-# 1. Load the hidden environment variables from your .env file
 load_dotenv()
-
-# 2. Initialize the AI Client
-# The SDK automatically detects the GEMINI_API_KEY saved in your .env file
 client = genai.Client()
 
+# --- 1. THE TEMPLATE (THE SCHEMA) ---
+# We define the tool exactly as we mapped it out
+software_tool = types.Tool(
+    function_declarations=[
+        types.FunctionDeclaration(
+            name="open_software",
+            description="Use this tool to launch a local desktop application or executable file on the Windows operating system.",
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    "app_name": types.Schema(
+                        type=types.Type.STRING,
+                        description="The exact name of the application to open, such as 'Chrome', 'Spotify', or 'Discord'."
+                    )
+                },
+                required=["app_name"],
+            ),
+        )
+    ]
+    
+)
+
 def generate_response(prompt):
-    """
-    COGNITIVE ENGINE: Packages the user's transcribed voice text, 
-    sends it to the Gemini neural network, and extracts the text reply.
-    """
     try:
         print(f"[BRAIN] Routing prompt to cloud cognition: '{prompt}'")
         
-        # 3. System Instruction to shape OMEN's persona and handle phonetic speech errors
         system_instruction = (
             "You are OMEN, a highly advanced, slightly sarcastic AI assistant. "
-            "Your input comes from voice-to-text software, so it may contain phonetic typos "
-            "(e.g., 'oh man' or 'amen' instead of 'OMEN'). Ignore these transcription errors, "
-            "understand the user's intent, and answer as OMEN. Keep responses under 2 sentences."
+            "Your input comes from voice-to-text software, so it may contain phonetic typos. "
+            "If the user asks to open an application, you MUST use the open_software tool. "
+            "Otherwise, answer conversationally in under 2 sentences."
         )
         
+        # 2. HANDING THE TEMPLATE TO GEMINI
+        # We add the 'tools' parameter to our config so the AI knows the menu exists
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
             config=genai.types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                temperature=0.7
+                temperature=0.7,
+                tools=[software_tool] # <--- Here is where we hand it the template
             )
         )
         
-        print("[BRAIN] Neural synchronization complete. Response acquired.")
-        
-        # Clean up any markdown formatting symbols so the voice synthesizer doesn't read them out loud
-        clean_text = response.text.replace("*", "")
-        return clean_text
+        # 3. CHECKING THE AI'S DECISION
+        # Did the AI decide to use the tool, or did it just talk normally?
+        if response.function_calls:
+            # If it used the tool, we grab the payload and send it back to main.py
+            function_call = response.function_calls[0]
+            print(f"[BRAIN] Tool selected: {function_call.name}")
+            return function_call
+        else:
+            # If it didn't use the tool, we just return the normal text
+            print("[BRAIN] Neural synchronization complete. Text response acquired.")
+            clean_text = response.text.replace("*", "")
+            return clean_text
         
     except Exception as e:
         print(f"[BRAIN CRITICAL ERROR] Cloud connection severed: {e}")
-        return "Sir, my cognitive link to the mainframe has been severed. Please check my API credentials."
+        return "Sir, my cognitive link to the mainframe has been severed."
