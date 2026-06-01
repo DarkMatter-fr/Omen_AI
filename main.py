@@ -42,7 +42,7 @@ def process_voice_input():
         if hasattr(response, "name") and response.name == "open_software":
             
             # Extract the specific app name from the AI's data packet
-            target_app = response.arguments["app_name"]
+            target_app = response.args["app_name"]
             print(f"[SYSTEM] AI requested to launch: {target_app}")
             
             try:
