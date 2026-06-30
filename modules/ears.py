@@ -1,18 +1,40 @@
+"""
+ears.py — Speech-to-Text input module for OMEN.
+
+Handles microphone capture, ambient noise calibration, and
+transcription via Google Web Speech API.
+"""
+
+import logging
 import speech_recognition as sr
 from modules import audio_utils as au
 
-def take_command():
+logger = logging.getLogger("OMEN.ears")
+
+# Common phonetic mishearings of "OMEN" by Google STT.
+# Future: replace with a custom trained language model or Porcupine wake word.
+OMEN_ALIASES = [
+    "women", "oh man", "amen", "roman", "almond",
+    "oman", "open", "oh min", "a man"
+]
+
+
+def take_command() -> str:
     """
-    Main sensory entry point. Scans the environment room decibels, 
-    configures its thresholds automatically, and transcribes voice input.
+    Main sensory entry point.
+    1. Samples ambient decibels to auto-calibrate recognition thresholds.
+    2. Opens the microphone and listens for a voice command.
+    3. Transcribes and normalizes the audio to a clean string.
+
+    Returns:
+        str: Lowercase transcribed query, or "none" on failure/silence.
     """
     r = sr.Recognizer()
-    
-    # 1. Check the room volume using your shared utility
+
+    # --- Step 1: Ambient noise calibration ---
     db_level = au.scan_ambient_decibels()
-    print(f"[EARS] Global utility tracking layer reports: {db_level} dB")
-    
-    # 2. Map raw decibel value directly to threshold parameters
+    logger.debug(f"Ambient room level: {db_level} dB")
+
     if db_level < 45.0:
         detected_mode = "whisper"
         r.energy_threshold = 200
@@ -26,30 +48,39 @@ def take_command():
         r.energy_threshold = 450
         r.pause_threshold = 0.9
 
-    print(f"[EARS] Matrix calibrated into: {detected_mode.upper()} ({r.energy_threshold} energy cutoff)")
+    logger.debug(f"Calibration mode: {detected_mode.upper()} (energy={r.energy_threshold})")
 
-    # 3. Open the hardware microphone and listen
+    # --- Step 2: Capture audio ---
     with sr.Microphone() as source:
         try:
-            # Enforce a maximum recording ceiling of 15 seconds to prevent memory bloat
+            # Max 15s phrase to prevent memory bloat; 4s silence = timeout
             audio = r.listen(source, timeout=4, phrase_time_limit=15)
-            print("[EARS] Sound wave captured. Transcribing language frequencies...")
-            
-            # Use English-India language tagging to extract syllables accurately
+            logger.debug("Audio captured. Sending to STT engine...")
+
+            # English-India locale for accurate syllable extraction
             query = r.recognize_google(audio, language='en-in').lower()
-            
-            # Local normalization rule
-            if "tough" in query:
-                query = query.replace("tough", "tuff")
-                
+
+            # --- Step 3: Text normalization ---
+            # Fix known STT quirk: 'tough' → 'tuff'
+            query = query.replace("tough", "tuff")
+
+            # Correct phonetic mishearings of the assistant name "OMEN"
+            # Bug fix: iterate and check each alias, replace the MATCHED alias (not `alias` var)
+            for alias in OMEN_ALIASES:
+                if alias in query:
+                    query = query.replace(alias, "omen")
+                    logger.debug(f"Alias '{alias}' normalized to 'omen'")
+                    break  # Stop after first match to avoid over-replacement
+
+            logger.info(f"Transcribed query: '{query}'")
             return query
-            
+
         except sr.WaitTimeoutError:
-            print("[EARS] Aborted: User did not speak within time window.")
+            logger.info("Timeout: No speech detected within the listening window.")
             return "none"
         except sr.UnknownValueError:
-            print("[EARS] Unresolved: Sound wave structural format unreadable.")
+            logger.info("STT: Audio captured but speech was unintelligible.")
             return "none"
         except Exception as e:
-            print(f"[EARS CRITICAL ERROR] Pipeline shattered: {e}")
+            logger.error(f"STT pipeline failure: {e}")
             return "none"

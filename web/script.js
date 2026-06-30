@@ -1,90 +1,183 @@
-const micWrapper = document.getElementById('mic-wrapper');
-const transcript = document.getElementById('transcript');
-const hud = document.getElementById('hud');
-const statusLabel = document.getElementById('status-label');
-const waveformCanvas = document.getElementById('waveform');
-const canvasCtx = waveformCanvas.getContext('2d');
+/* ==========================================
+   OMEN OS — JAVASCRIPT BRIDGE (script.js)
+   ========================================== */
 
-let currentAssistantState = 'idle';
-let animationFrameId = null;
-
-/* --- EXPOSED TO PYTHON VIA EEL --- */
-
-// Standard UI state modifier
+/**
+ * 1. ASSISTANT STATE ENGINE
+ * Python calls this to animate the central core orb based on current state.
+ * @param {string} state - 'idle' | 'listening' | 'thinking'
+ */
 eel.expose(setAssistantState);
 function setAssistantState(state) {
-    micWrapper.className = `orb-wrapper ${state}`;
-    hud.className = `hud ${state}`;
-    statusLabel.textContent = state.toUpperCase();
-    currentAssistantState = state;
-}
-
-// Append conversation text bubbles
-eel.expose(addMessage);
-function addMessage(role, text) {
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `msg ${role}`;
-    const now = new Date();
-    const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    msgDiv.innerHTML = `<span>${text}</span><span class="time">${time}</span>`;
-    transcript.appendChild(msgDiv);
-    transcript.scrollTop = transcript.scrollHeight;
-}
-
-// Interactive "Tuff Mode" Visual Trigger
-eel.expose(triggerTuffMode);
-function triggerTuffMode(duration) {
-    const prevState = currentAssistantState;
-    
-    micWrapper.className = `orb-wrapper tuff`;
-    hud.className = `hud tuff`;
-    statusLabel.textContent = "TUFF MODE ACTIVE";
-    statusLabel.style.color = "#ff4500";
-
-    setTimeout(() => {
-        setAssistantState(prevState);
-        statusLabel.style.color = ""; 
-    }, duration);
-}
-
-/* --- LOCAL ACTIONS --- */
-
-function triggerMic() {
-    console.log("[Eel JS] Orb Clicked -> Initiating Python Voice Capture Pipeline");
-    eel.process_voice_input();
-}
-
-/* Waveform Canvas Rendering Loop */
-/* Spectral Waveform Canvas Rendering Loop */
-/* Premium Native Waveform Canvas Rendering Loop */
-function drawWaveform() {
-    animationFrameId = requestAnimationFrame(drawWaveform);
-    const w = waveformCanvas.width, h = waveformCanvas.height;
-    canvasCtx.clearRect(0, 0, w, h);
-    canvasCtx.beginPath();
-    canvasCtx.moveTo(0, h / 2);
-    
-    // Core OMEN Brand Color Mapping
-    let strokeColor = 'rgba(107, 104, 128, 0.3)'; // IDLE (Muted Grey Slate)
-    if (currentAssistantState === 'listening') strokeColor = 'rgba(232, 64, 87, 0.85)';
-    if (currentAssistantState === 'thinking') strokeColor = 'rgba(107, 33, 168, 0.85)';
-    if (currentAssistantState === 'speaking') strokeColor = 'rgba(34, 211, 238, 0.85)';
-    if (micWrapper.classList.contains('tuff')) strokeColor = 'rgba(255, 69, 0, 1)';
-
-    canvasCtx.strokeStyle = strokeColor;
-    canvasCtx.lineWidth = 2;
-    const t = Date.now() * 0.003;
-    
-    for (let x = 0; x < w; x++) {
-        let amplitude = 2;
-        if (currentAssistantState === 'listening') amplitude = 14;
-        if (currentAssistantState === 'speaking') amplitude = 20;
-        if (micWrapper.classList.contains('tuff')) amplitude = 26;
-
-        const y = (h / 2) + Math.sin(x * 0.018 + t) * Math.cos(x * 0.006 + t) * amplitude;
-        canvasCtx.lineTo(x, y);
+    const visualizer = document.getElementById('visualizer');
+    if (visualizer) {
+        visualizer.className = 'visualizer ' + state;
     }
-    canvasCtx.stroke();
+
+    // Disable the mic button while OMEN is processing
+    const micBtn = document.getElementById('mic-btn');
+    if (micBtn) {
+        micBtn.disabled = (state === 'listening' || state === 'thinking');
+    }
 }
-// Run visualizer immediately on page load
-drawWaveform();
+
+/**
+ * 2. HOLOGRAPHIC TERMINAL LOGGER
+ * Python calls this to print system status to the UI console.
+ * Uses textContent instead of innerHTML to prevent XSS injection.
+ * @param {string} message - The log string to display
+ */
+eel.expose(logToTerminal);
+function logToTerminal(message) {
+    const terminal = document.getElementById('terminal-log');
+    if (!terminal) return;
+
+    const entry = document.createElement('p');
+
+    // Prefix indicator — color-coded by type
+    const prefix = document.createElement('span');
+    prefix.className = 'log-prefix';
+    prefix.textContent = '> ';
+
+    const content = document.createElement('span');
+
+    // Color-code log lines by actor
+    const msgStr = String(message);
+    if (msgStr.startsWith('YOU:')) {
+        entry.classList.add('log-user');
+    } else if (msgStr.startsWith('F.R.I.D.A.Y:')) {
+        entry.classList.add('log-friday');
+    } else if (msgStr.startsWith('ERROR:')) {
+        entry.classList.add('log-error');
+    } else if (msgStr.startsWith('ACTION:') || msgStr.startsWith('STATUS:')) {
+        entry.classList.add('log-system');
+    }
+
+    // Safe text insertion — no innerHTML, no XSS
+    content.textContent = msgStr;
+    entry.appendChild(prefix);
+    entry.appendChild(content);
+    terminal.appendChild(entry);
+
+    // Auto-scroll to latest entry
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+/**
+ * 3. TEXT INPUT HANDLER
+ * Sends the typed query to Python for processing.
+ */
+function submitTextInput() {
+    const input = document.getElementById('text-input');
+    if (!input) return;
+
+    const query = input.value.trim();
+    if (!query) return;
+
+    input.value = '';
+    eel.process_text_input(query)();
+}
+
+/**
+ * 4. SESSION RESET
+ * Clears conversation history in the brain and the UI terminal.
+ */
+function clearSession() {
+    const terminal = document.getElementById('terminal-log');
+    if (terminal) {
+        terminal.innerHTML = '';
+    }
+    eel.clear_session()();
+}
+
+/**
+ * 5. KEYBOARD SHORTCUT: Enter to submit text input
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    const textInput = document.getElementById('text-input');
+    if (textInput) {
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitTextInput();
+            }
+        });
+    }
+
+    // Poll Python for wake word status on startup (once UI is ready)
+    setTimeout(() => {
+        eel.get_wake_word_status()(function(status) {
+            updateWakeWordStatus(status);
+        });
+    }, 1500);
+});
+
+
+/**
+ * 6. WAKE WORD STATUS — Python calls this to update the UI pill
+ * Called by Python's _update_wake_status() helper via Eel.
+ * @param {string} status - 'active' | 'standby' | 'off' | 'unavailable'
+ */
+eel.expose(updateWakeWordStatus);
+function updateWakeWordStatus(status) {
+    const pill    = document.getElementById('wake-word-pill');
+    const dot     = document.getElementById('ww-dot');
+    const label   = document.getElementById('ww-status');
+    const btn     = document.getElementById('ww-toggle-btn');
+    const sidebar = document.getElementById('sidebar-ww-status');
+
+    if (!pill || !label) return;
+
+    // Remove all state classes
+    pill.classList.remove(
+        'ww-state-active', 'ww-state-standby',
+        'ww-state-off', 'ww-state-unavailable'
+    );
+
+    // Map status to display values
+    const stateMap = {
+        'active':      { cls: 'ww-state-active',      text: 'ACTIVE',      btn: 'DISABLE', sidebar: 'ACTIVE' },
+        'standby':     { cls: 'ww-state-standby',     text: 'STANDBY',     btn: 'DISABLE', sidebar: 'STANDBY' },
+        'off':         { cls: 'ww-state-off',          text: 'OFF',         btn: 'ENABLE',  sidebar: 'OFFLINE' },
+        'unavailable': { cls: 'ww-state-unavailable',  text: 'UNAVAILABLE', btn: 'N/A',     sidebar: 'N/A' },
+    };
+
+    const state = stateMap[status] || stateMap['unavailable'];
+
+    pill.classList.add(state.cls);
+    label.textContent = state.text;
+
+    if (btn) {
+        btn.textContent = state.btn;
+        // Style toggle button: DISABLE = red variant, ENABLE = default
+        if (status === 'active' || status === 'standby') {
+            btn.classList.add('ww-enabled');
+        } else {
+            btn.classList.remove('ww-enabled');
+        }
+        // Disable the button if OWW is unavailable
+        btn.disabled = (status === 'unavailable');
+    }
+
+    if (sidebar) {
+        sidebar.textContent = state.sidebar;
+    }
+}
+
+
+/**
+ * 7. WAKE WORD TOGGLE — Called by the pill's toggle button click
+ * Reads current state and sends inverse to Python.
+ */
+function toggleWakeWord() {
+    const label = document.getElementById('ww-status');
+    if (!label) return;
+
+    const currentStatus = label.textContent.trim();
+    // If currently active or standby, disable. Otherwise enable.
+    const shouldEnable = (currentStatus === 'OFF' || currentStatus === 'UNAVAILABLE') ? true : false;
+
+    eel.toggle_wake_word(shouldEnable)(function(result) {
+        // Python will call updateWakeWordStatus() after toggling
+    });
+}

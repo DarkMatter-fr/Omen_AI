@@ -1,0 +1,46 @@
+# OMEN OS — Python Dependencies
+# Generated from active venv. Install with: pip install -r requirements.txt
+
+# Core AI
+google-genai==2.7.0
+
+# Memory
+chromadb>=1.0.0
+
+# UI Framework
+Eel==0.18.2
+
+# Voice — Speech Recognition (STT)
+SpeechRecognition==3.16.1
+PyAudio==0.2.14
+
+# Voice — Text-to-Speech (TTS)
+pyttsx3==2.99
+
+# Wake Word Detection (Milestone 2)
+openwakeword>=0.6.0
+
+# Desktop Automation
+PyAutoGUI==0.9.54
+PyGetWindow==0.0.9
+pyperclip==1.11.0
+pycaw==20251023
+
+# Web / Networking
+httpx==0.28.1
+requests==2.34.2
+beautifulsoup4==4.14.3
+
+# Configuration
+python-dotenv==1.2.2
+
+# Data / Math
+numpy==2.4.6
+
+# Windows specifics
+pywin32==311
+pypiwin32==223
+comtypes==1.4.16
+
+# Utilities
+psutil==7.2.2
