@@ -5,21 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="OMEN OS — F.R.I.D.A.Y. Cognitive Core Dashboard">
     <title>OMEN OS — F.R.I.D.A.Y. COGNITIVE CORE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script type="text/javascript" src="/eel.js"></script>
 </head>
 <body>
 
+    <!-- Corner HUD Frame Decorations -->
+    <div class="hud-corner hud-tl"></div>
+    <div class="hud-corner hud-tr"></div>
+    <div class="hud-corner hud-bl"></div>
+    <div class="hud-corner hud-br"></div>
+
     <div class="dashboard-grid">
 
-        <!-- TOP HEADER -->
+        <!-- ═══ TOP HEADER ═══ -->
         <header class="sys-header">
-            <div class="sys-title">OMEN // F.R.I.D.A.Y. COGNITIVE CORE v2.0</div>
-            <div class="sys-header-right">
+            <div class="header-left">
+                <div class="sys-logo">
+                    <span class="logo-icon">◈</span>
+                    <div class="logo-text">
+                        <span class="logo-title">OMEN // F.R.I.D.A.Y.</span>
+                        <span class="logo-sub">COGNITIVE CORE v2.0 — MILESTONE 4</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="header-ticker" id="header-ticker">NEURAL LINK STABLE &nbsp;|&nbsp; ALL SUBSYSTEMS NOMINAL &nbsp;|&nbsp; MEMORY SUBSYSTEM ACTIVE &nbsp;|&nbsp; EDGE-TTS ENGINE ONLINE &nbsp;|&nbsp; CHROMADB VECTOR STORE READY</div>
+            </div>
+            <div class="header-right">
                 <!-- Wake Word Status Pill -->
                 <div class="wake-word-pill" id="wake-word-pill">
                     <span class="ww-dot" id="ww-dot"></span>
-                    <span class="ww-label">WAKE WORD: </span>
+                    <span class="ww-label">WAKE WORD</span>
                     <span class="ww-status" id="ww-status">LOADING</span>
                     <button
                         id="ww-toggle-btn"
@@ -36,9 +56,18 @@
             </div>
         </header>
 
-        <!-- LEFT SIDEBAR — Core Telemetry -->
+        <!-- ═══ LEFT SIDEBAR — Core Telemetry ═══ -->
         <aside class="panel side-panel">
-            <div class="panel-header">CORE TELEMETRY</div>
+            <div class="panel-header">◈ CORE TELEMETRY</div>
+
+            <!-- Central Orb Visualizer -->
+            <div class="reactor-wrapper">
+                <canvas id="waveform-canvas"></canvas>
+                <div id="visualizer-ring" class="vis-ring idle"></div>
+                <div class="orb-state-label" id="orb-state-label">IDLE</div>
+            </div>
+
+            <!-- Telemetry Rows -->
             <div class="telemetry-group">
                 <div class="telemetry-item">
                     <div class="tel-label">NEURAL LINK</div>
@@ -54,59 +83,72 @@
                 </div>
                 <div class="telemetry-item">
                     <div class="tel-label">TTS ENGINE</div>
-                    <div class="tel-value">SAPI OFFLINE</div>
-                </div>
-                <div class="telemetry-item">
-                    <div class="tel-label">SUBPROCESS ROUTER</div>
-                    <div class="tel-value">READY</div>
+                    <div class="tel-value" id="tel-tts">EDGE-TTS</div>
                 </div>
                 <div class="telemetry-item">
                     <div class="tel-label">MEMORY</div>
                     <div class="tel-value">ACTIVE</div>
                 </div>
                 <div class="telemetry-item">
-                    <div class="tel-label">WAKE WORD ENGINE</div>
+                    <div class="tel-label">WAKE WORD</div>
                     <div class="tel-value" id="sidebar-ww-status">LOADING...</div>
                 </div>
             </div>
 
-            <!-- Session Control -->
-            <div class="sidebar-actions">
+            <!-- Voice + Text Controls -->
+            <div class="sidebar-controls">
+                <button id="mic-btn" onclick="startListening()" title="Activate voice capture">
+                    <span class="mic-icon">⬤</span>
+                    <span>VOICE CAPTURE</span>
+                </button>
                 <button id="clear-btn" onclick="clearSession()" title="Clear conversation history">
-                    CLEAR SESSION
+                    ⟳ CLEAR SESSION
                 </button>
             </div>
         </aside>
 
-        <!-- CENTER — Orb + Controls -->
+        <!-- ═══ RIGHT MAIN — Chat Interface ═══ -->
         <main class="panel main-workspace">
-            <div class="reactor-wrapper">
-                <div id="visualizer" class="visualizer idle"></div>
+            <div class="chat-header">
+                <span class="chat-header-label">◈ NEURAL INTERFACE CHANNEL</span>
+                <span class="chat-status-badge" id="chat-status-badge">STANDBY</span>
             </div>
 
-            <!-- Voice Input Button -->
-            <button id="mic-btn" onclick="startListening()">
-                &#127897; ENGAGE VOICE CAPTURE
-            </button>
+            <!-- Chat Bubble Window -->
+            <div id="chat-window">
+                <div class="chat-welcome">
+                    <div class="welcome-icon">◈</div>
+                    <div class="welcome-text">F.R.I.D.A.Y. ONLINE</div>
+                    <div class="welcome-divider"></div>
+                    <div class="welcome-sub">Neural interface initialized. Awaiting your command, boss.</div>
+                </div>
+            </div>
 
-            <!-- Text Input Fallback -->
-            <div class="text-input-group">
+            <!-- Text Input Bar -->
+            <div class="chat-input-bar">
+                <div class="input-decorator left">▶</div>
                 <input
                     id="text-input"
                     type="text"
-                    placeholder="Type a command or question..."
+                    placeholder="Enter command or query..."
                     autocomplete="off"
                     spellcheck="false"
                 />
-                <button id="send-btn" onclick="submitTextInput()">SEND</button>
+                <button id="send-btn" onclick="submitTextInput()" title="Send">
+                    <span>TRANSMIT</span>
+                    <span class="send-arrow">▶</span>
+                </button>
             </div>
         </main>
 
-        <!-- BOTTOM — System Terminal -->
-        <section class="panel terminal-panel">
-            <div class="panel-header">SYSTEM TERMINAL MATRIX</div>
+        <!-- ═══ BOTTOM — System Terminal Strip ═══ -->
+        <section class="terminal-panel">
+            <div class="terminal-header">
+                <span class="terminal-label">◈ SYSTEM MATRIX</span>
+                <span class="terminal-blink">█</span>
+            </div>
             <div id="terminal-log">
-                <p><span class="log-prefix">&gt; </span><span>System initialized. F.R.I.D.A.Y. standing by...</span></p>
+                <p><span class="log-prefix">&gt; </span><span class="log-system-text">System initialized. F.R.I.D.A.Y. standing by...</span></p>
             </div>
         </section>
 
