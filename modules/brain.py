@@ -55,7 +55,11 @@ software_tool = types.Tool(
             name="open_software",
             description=(
                 "Launch a local desktop application or executable on Windows. "
-                "Use this when the user asks to open, launch, or start any app."
+                "ONLY call this when the user explicitly asks to open or launch a "
+                "named local application (e.g. 'open notepad', 'launch Spotify', "
+                "'start Discord'). Do NOT call this for websites, URLs, or web "
+                "services. Do NOT call this for general questions, factual queries, "
+                "or any request that does not explicitly name a local app."
             ),
             parameters=types.Schema(
                 type=types.Type.OBJECT,
@@ -63,8 +67,9 @@ software_tool = types.Tool(
                     "app_name": types.Schema(
                         type=types.Type.STRING,
                         description=(
-                            "The exact name of the application, e.g. 'Chrome', "
-                            "'Spotify', 'Discord', 'notepad', 'calc'."
+                            "The exact name of the local application to launch, "
+                            "e.g. 'Spotify', 'Discord', 'notepad', 'calc', 'chrome'. "
+                            "Must be explicitly named by the user."
                         )
                     )
                 },
@@ -214,7 +219,14 @@ When the session starts, greet with exactly this energy:
 
 ## CRITICAL RULES
 1. NEVER say tool names, function names, or anything technical.
-2. You are a voice. Speak like one. No lists, no markdown, no function names."""
+2. You are a voice. Speak like one. No lists, no markdown, no function names.
+3. NEVER call open_software for websites, web services, or URLs (YouTube, Google,
+   Reddit, etc.). If asked to open a website, say you can't open browsers directly
+   but can open local apps.
+4. NEVER call any tool for general knowledge, factual, or conversational questions.
+   Questions like 'what is X', 'how does Y work', 'tell me about Z' are answered
+   directly — NO tool calls.
+5. Only call open_software when the user says a specific local app by name."""
 
 
 # ---------------------------------------------------------------------------
@@ -481,19 +493,32 @@ def generate_response(prompt: str):
                             model_text += part.text
 
         # --- 4. Append model response to in-process history ---
+        # IMPORTANT: We must always append something to history for this turn,
+        # even when the model only returned function_calls with no text.
+        # Failing to do so leaves the history in a corrupted state where the
+        # next query inherits stale context and triggers wrong tool calls.
+        has_tool_calls = bool(
+            hasattr(response, 'function_calls') and response.function_calls
+        )
         if model_text:
             _conversation_history.append({
                 "role": "model",
                 "parts": [{"text": model_text}]
             })
+        elif has_tool_calls:
+            # Synthetic placeholder so history alternation is preserved.
+            # Lists the tool names the model called for traceability.
+            tool_names = ", ".join(fc.name for fc in response.function_calls)
+            _conversation_history.append({
+                "role": "model",
+                "parts": [{"text": f"[tool calls dispatched: {tool_names}]"}]
+            })
+            logger.debug(f"Appended synthetic history entry for tool calls: {tool_names}")
 
         # --- 5. Persist turns to SQLite ---
         # When the response is a plain text reply (no tool calls), store both turns now.
         # When the response contains function calls, only store the user turn here;
         # the model turn will be stored by send_tool_results() after the agentic loop.
-        has_tool_calls = bool(
-            hasattr(response, 'function_calls') and response.function_calls
-        )
         if session_id:
             memory.store_turn(session_id, "user", prompt)
             if model_text and not has_tool_calls:
