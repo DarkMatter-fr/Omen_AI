@@ -1,6 +1,6 @@
 # OMEN OS — Project Tracker
 
-## Current Milestone: M2 — Wake Word + Continuous Listening ✅
+## Current Milestone: M4 — Modern Chat UI ✅
 
 ---
 
@@ -61,11 +61,32 @@ OpenWakeWord (ONNX) — always-on hands-free activation via `"hey_jarvis"` (cust
 | 11 | Add `updateWakeWordStatus()` + `toggleWakeWord()` to `web/script.js` | ✅ Done |
 | 12 | Update `requirements.txt` | ✅ Done |
 
-### 🔲 Milestone 3 — Voice Quality Upgrade
-Edge-TTS / ElevenLabs — replace pyttsx3 robotic voice.
+### ✅ Milestone 3 — Voice Quality Upgrade (COMPLETE)
+edge-tts (Microsoft Neural) — replaces pyttsx3 robotic SAPI voice. Auto-falls back to pyttsx3 if offline.
 
-### 🔲 Milestone 4 — Modern Chat UI
-Chat bubbles, streaming text, waveform visualizer.
+| # | Task | Status |
+|---|---|---|
+| 1 | Install `edge-tts>=6.1.12` dependency | ✅ Done |
+| 2 | Install `playsound==1.2.2` dependency | ✅ Done |
+| 3 | Rewrite `modules/mouth.py` — edge-tts primary, pyttsx3 fallback | ✅ Done |
+| 4 | Add `.env` config support (`EDGE_TTS_VOICE`, `EDGE_TTS_RATE`) | ✅ Done |
+| 5 | Update `requirements.txt` | ✅ Done |
+| 6 | Verify standalone `speak()` test | ✅ Done |
+
+### ✅ Milestone 4 — Modern Chat UI (COMPLETE)
+Chat bubbles, streaming typewriter text, waveform visualizer, molten amber/gold HUD aesthetic matching reference image.
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Implement chat bubble layout (user/OMEN sided) | ✅ Done |
+| 2 | Streaming typewriter text effect | ✅ Done |
+| 3 | Canvas orb visualizer (idle/listening/thinking states) | ✅ Done |
+| 4 | Thinking dots animation bubble | ✅ Done |
+| 5 | Rewrite `style.css` — Orbitron font, vignette, CRT scanlines, dark void aesthetic | ✅ Done |
+| 6 | Enhanced orb render — 8-wisp particle crackle, 6-layer thinking arcs, audio-reactive EQ | ✅ Done |
+| 7 | HUD corner brackets with tick marks | ✅ Done |
+| 8 | Orb state label (IDLE / LISTENING / PROCESSING) | ✅ Done |
+| 9 | Welcome divider + Orbitron display font on logo | ✅ Done |
 
 ### 🔲 Milestone 5 — Computer Control Suite
 Window management, screenshots, OCR, Playwright automation.
